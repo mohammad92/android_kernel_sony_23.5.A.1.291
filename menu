@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# clear screen
+  clear 
+
+# location
+  export DIR=`readlink -f .`;
+  export PARENT_DIR=`readlink -f ${DIR}/..`;
+
+# color
+  On_Blue=`echo -e "\033[44m"`        # Blue
+  Color_Off=`echo -e "\033[0m"`       # Text Reset
+  Red=`echo -e "\033[0;31m"`          # Red
+  Blue=`echo -e "\033[0;34m"`         # Blue
+
+# arm-linux-androideabi-4.9 gcc compiler
+  if [ ! -d $PARENT_DIR/arm-linux-androideabi-4.9 ]; then
+  # menu
+    echo "${On_Blue} arm-linux-androideabi-4.9 gcc compiler does not exist${Color_Off}"
+    echo "${On_Blue} in path $PARENT_DIR/arm-linux-androideabi-4.9${Color_Off}"
+    echo
+    echo " c. clone arm-linux-androideabi-4.9"
+    echo " "
+    echo " r. restart script"
+    echo " x. exit script"
+  # Read the letter the user gives
+    echo
+    read enterLetter
+
+  # clone
+    if [ "$enterLetter" == "c" ]; then
+      git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9 $PARENT_DIR/arm-linux-androideabi-4.9
+      $DIR/menu
+    # Restart
+    elif [ "$enterLetter" == "r" ]; then
+      $DIR/menu
+
+  # Exit
+    elif [ "$enterLetter" == "x" ]; then
+      exit 0
+
+  # Other choice
+    else
+      echo "${RED}Invalid option.${Color_Off}"
+      $DIR/menu
+    fi
+  fi;
+
+# clear screen
+  clear
+
+# main menu
+  echo "${On_Blue} sony kernel build script${Color_Off}"
+  echo
+  echo " b. build zImage"
+  echo " c. make clean"
+  echo
+  echo " r. restart script"
+  echo " x. exit script"
+  # Read the letter the user gives
+  echo
+  read enterLetter
+
+# build
+  if [ "$enterLetter" == "b" ]; then
+    # remove previous zImage files
+    if [ -e $PARENT_DIR/zImage ]; then
+      rm $PARENT_DIR/zImage;
+    fi;
+    #name
+    export KBUILD_BUILD_USER=mohammad.afaneh
+    export KBUILD_BUILD_HOST=ubuntu
+    # kernel config
+    export ARCH=arm;
+    export KERNEL_CONFIG="shinano_sirius_defconfig";
+    # system compiler
+    export CROSS_COMPILE=$PARENT_DIR/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-;
+    # build
+    export USER=`whoami`
+    export TMPFILE=`mktemp -t`;
+    export NUMBEROFCPUS=`grep 'processor' /proc/cpuinfo | wc -l`;
+    make $KERNEL_CONFIG;
+    make -j$NUMBEROFCPUS zImage
+    # final Touch for Kernel
+    if [ -e $DIR/arch/arm/boot/zImage ]; then
+      cp $DIR/arch/arm/boot/zImage $PARENT_DIR/zImage;
+      stat $PARENT_DIR/zImage || exit 1;
+    else
+      echo "${RED}Kernel STUCK in BUILD!${Color_Off}"
+    fi;
+
+# clean
+  elif [ "$enterLetter" == "c" ]; then
+    # system compiler
+    export CROSS_COMPILE=$PARENT_DIR/arm-linux-androideabi-4.9/bin/arm-linux-androideabi-;
+    make clean
+    make mrproper
+    # remove previous zImage files
+    if [ -e $PARENT_DIR/zImage ]; then
+      rm $PARENT_DIR/zImage;
+    fi;
+    $DIR/menu
+
+# Restart
+  elif [ "$enterLetter" == "r" ]; then
+    $DIR/menu
+
+# Exit
+  elif [ "$enterLetter" == "x" ]; then
+    exit 0
+
+# Other choice
+  else
+    echo "${RED}Invalid option.${Color_Off}"
+    $DIR/menu
+fi
